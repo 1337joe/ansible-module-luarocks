@@ -3,6 +3,7 @@
 
 # (c) 2016, Rahul AG <r@hul.ag>
 # (c) 2018, Ahmad Amireh <ahmad@instructure.com>
+# (c) 2020, Joseph Rogers <1337joe@w3asel.dev>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +26,7 @@ from ansible.module_utils.basic import AnsibleModule
 ANSIBLE_METADATA = {
     'status': ['preview'],
     'supported_by': 'community',
-    'version': '1.0.2',
+    'version': '1.0.3',
 }
 
 DOCUMENTATION = '''
@@ -83,6 +84,10 @@ options:
     description:
       - The version to be installed
     required: false
+  extra_args:
+    description:
+      - Additional options passed directly to lua-rocks
+    required: false
 '''
 
 EXAMPLES = '''
@@ -125,6 +130,7 @@ class Luarocks(object):
         self.keep_other_versions = kwargs['keep_other_versions']
         self.version = kwargs['version']
         self.deps_mode = kwargs['deps_mode']
+        self.extra_args = kwargs['extra_args']
 
     def _exec(self, args, run_in_check_mode=False, check_rc=True):
         if not self.module.check_mode or (self.module.check_mode and run_in_check_mode):
@@ -145,6 +151,10 @@ class Luarocks(object):
                 else:
                     s = '--'
                 cmd.append('{}server={}'.format(s, self.server))
+
+            if self.extra_args:
+                for arg in self.extra_args.split():
+                    cmd.append(arg)
 
             cmd.extend(args)
 
@@ -199,6 +209,7 @@ def main():
         server=dict(default=None, required=False),
         override_servers=dict(default=False, required=False, type='bool'),
         deps_mode=dict(default=None, choices=['all', 'one', 'order', 'none', ]),
+        extra_args=dict(default=None, required=False),
     )
     module = AnsibleModule(
         argument_spec=arg_spec,
@@ -215,6 +226,7 @@ def main():
     server = module.params['server']
     override_servers = module.params['override_servers']
     deps_mode = module.params['deps_mode']
+    extra_args = module.params['extra_args']
 
     luarocks = Luarocks(
         module,
@@ -228,6 +240,7 @@ def main():
         state=state,
         override_servers=override_servers,
         deps_mode=deps_mode,
+        extra_args=extra_args,
     )
 
     changed = False
